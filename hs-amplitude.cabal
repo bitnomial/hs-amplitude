@@ -23,9 +23,20 @@ library
       aeson
     , base
     -- , containers
-    -- , http-client
-    -- , http-client-tls
-    -- , servant
-    -- , servant-client
+    --, http-client
+    , http-client-tls
+    , servant
+    , servant-client
+    , text
+  default-language: GHC2021
+
+executable amplitude-example
+  main-is: Main.hs
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Werror -Wmissing-home-modules -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Wmissing-export-lists -Wno-unused-do-bind -Wunused-packages -funbox-strict-fields -fwrite-ide-info -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      amplitude
+    , base
     , text
   default-language: GHC2021
