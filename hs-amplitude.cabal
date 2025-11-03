@@ -1,0 +1,31 @@
+cabal-version: 3.0
+
+-- This file has been generated from package.yaml by hpack version 0.38.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           amplitude
+version:        0.1.1
+synopsis:       amplitude library
+maintainer:     Bitnomial <help@bitnomial.com>
+copyright:      2025 Bitnomial, Inc.
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules:
+      Amplitude.Track
+  hs-source-dirs:
+      src/lib
+  ghc-options: -Wall -Werror -Wmissing-home-modules -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Wmissing-export-lists -Wno-unused-do-bind -Wunused-packages -funbox-strict-fields -fwrite-ide-info
+  build-depends:
+      aeson
+    , base
+    -- , containers
+    -- , http-client
+    -- , http-client-tls
+    -- , servant
+    -- , servant-client
+    , text
+  default-language: GHC2021
