@@ -21,7 +21,6 @@ module Amplitude.Track (
     trackEvent,
 ) where
 
-import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (
     FromJSON,
     ToJSON,
@@ -32,6 +31,8 @@ import Data.Aeson (
     (.=),
  )
 import Data.Aeson qualified as Aeson
+import Data.Bifunctor qualified as B
+import Data.Functor ((<&>))
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
@@ -168,9 +169,6 @@ mkEventWithUserId eventName uid eventProps userProps =
 
 trackEvent :: AmplitudeClient -> AmplitudeEvent -> IO (Either AmplitudeError AmplitudeResponse)
 trackEvent ampClient event = do
-    liftIO $
-        runClientM (http2Client req) ampClient.servantEnv >>= \case
-            Left err -> pure . Left $ AmplitudeError err
-            Right resp -> pure $ Right resp
+    runClientM (http2Client req) ampClient.servantEnv <&> B.first AmplitudeError
   where
     req = AmplitudeEventSubmitRequest ampClient.apiKey [event]
