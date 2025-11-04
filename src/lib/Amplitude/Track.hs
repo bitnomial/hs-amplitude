@@ -34,7 +34,6 @@ import Data.Aeson qualified as Aeson
 import Data.Bifunctor qualified as B
 import Data.Functor ((<&>))
 import Data.Map (Map)
-import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import Data.Time.Clock as C
@@ -68,9 +67,8 @@ newtype AmplitudeApiKey = AmplitudeApiKey {unApiKey :: Text}
 createClient :: AmplitudeApiKey -> IO AmplitudeClient
 createClient key = do
     manager <- newTlsManager
-    let baseUrl = fromMaybe (error "Invalid hardcoded URL") $ parseBaseUrl "https://api2.amplitude.com"
-        env = mkClientEnv manager baseUrl
-    pure $ AmplitudeClient key env
+    baseUrl <- parseBaseUrl "https://api2.amplitude.com"
+    pure $ AmplitudeClient key (mkClientEnv manager baseUrl)
 
 -- | Request body for Amplitude HTTP API V2
 data AmplitudeEventSubmitRequest = AmplitudeEventSubmitRequest
