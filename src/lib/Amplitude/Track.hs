@@ -162,8 +162,9 @@ mkEventWithUserId eventName uid eventProps userProps =
 
 trackEvent :: AmplitudeClient -> AmplitudeEvent -> IO (Either AmplitudeError AmplitudeResponse)
 trackEvent ampClient event = do
-    let req = AmplitudeEventSubmitRequest ampClient.apiKey.unApiKey [event]
     liftIO $
         runClientM (http2Client req) ampClient.servantEnv >>= \case
             Left err -> pure . Left $ AmplitudeError err
             Right resp -> pure $ Right resp
+  where
+    req = AmplitudeEventSubmitRequest ampClient.apiKey.unApiKey [event]
