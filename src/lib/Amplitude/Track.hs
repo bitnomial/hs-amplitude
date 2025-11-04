@@ -64,7 +64,7 @@ newtype AmplitudeApiKey = AmplitudeApiKey {unApiKey :: Text}
 createClient :: AmplitudeApiKey -> IO AmplitudeClient
 createClient key = do
     manager <- newTlsManager
-    let baseUrl = fromMaybe (error "Invalid hardcoded URL") $ parseBaseUrl "https://api.amplitude.com"
+    let baseUrl = fromMaybe (error "Invalid hardcoded URL") $ parseBaseUrl "https://api2.amplitude.com"
         env = mkClientEnv manager baseUrl
     pure $ AmplitudeClient key env
 
