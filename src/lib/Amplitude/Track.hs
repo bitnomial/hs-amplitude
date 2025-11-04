@@ -106,7 +106,6 @@ data AmplitudeEvent = AmplitudeEvent
     , eventProperties :: Map Text Value
     , userProperties :: Map Text Value
     , sessionId :: Maybe Integer
-    , insertId :: Maybe Text
     }
     deriving (Show, Generic)
 
@@ -122,14 +121,16 @@ instance ToJSON AmplitudeEvent where
                 , "event_properties" .= eventProperties evt
                 , "user_properties" .= userProperties evt
                 , "session_id" .= sessionId evt
-                , "insert_id" .= insertId evt
+                -- an additional field (`insert_id`) is possible here,
+                -- but we chose not to implement it. It is used for event deduplication,
+                -- which we are unlikely to need any time soon.
                 ]
       where
         notNull Aeson.Null = False
         notNull _ = True
 
 posixTimeToMillis :: POSIXTime -> Integer
-posixTimeToMillis t = round (C.nominalDiffTimeToSeconds t / 1000000000)
+posixTimeToMillis t = round (C.nominalDiffTimeToSeconds t * 1000)
 
 -- | Response from Amplitude HTTP API V2
 data AmplitudeResponse = AmplitudeResponse
@@ -162,7 +163,6 @@ mkEventWithUserId eventName uid eventProps userProps =
         , eventProperties = eventProps
         , userProperties = userProps
         , sessionId = Nothing
-        , insertId = Nothing
         }
 
 trackEvent :: AmplitudeClient -> AmplitudeEvent -> IO (Either AmplitudeError AmplitudeResponse)

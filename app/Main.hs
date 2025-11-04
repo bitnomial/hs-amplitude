@@ -5,6 +5,7 @@ module Main (main) where
 import Amplitude.Track
 import Data.Map.Strict qualified as SM
 import Data.Text qualified as T
+import Data.Time.Clock.POSIX qualified as P
 import System.Environment (lookupEnv)
 import System.Exit (die)
 
@@ -19,12 +20,10 @@ main = do
     -- Create Amplitude client
     client <- createClient apiKey
 
-    -- Create a sample event
-    let event = mkEventWithUserId "test_event" "test_user_123" eventProp userProp
-
     -- Track the event
     putStrLn "Sending event to Amplitude..."
-    result <- trackEvent client event
+    time <- P.getPOSIXTime
+    result <- trackEvent client (mkEvent time)
 
     -- Print the response
     case result of
@@ -37,3 +36,13 @@ main = do
   where
     eventProp = SM.fromList [("some_event_prop", "some_event_prop_value")]
     userProp = SM.fromList [("some_user_prop", "some_user_prop_value")]
+    mkEvent time =
+        AmplitudeEvent
+            { eventType = "test-event"
+            , userId = Just "test_user_123"
+            , deviceId = Nothing
+            , time = Just time
+            , eventProperties = eventProp
+            , userProperties = userProp
+            , sessionId = Nothing
+            }

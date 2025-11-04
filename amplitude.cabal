@@ -38,6 +38,7 @@ executable amplitude-example
   build-depends:
       amplitude
     , base
+    , time
     , text
     , containers
   default-language: GHC2021
