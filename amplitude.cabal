@@ -21,9 +21,9 @@ library
   ghc-options: -Wall -Werror -Wmissing-home-modules -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wpartial-fields -Wmissing-export-lists -Wno-unused-do-bind -Wunused-packages -funbox-strict-fields -fwrite-ide-info
   build-depends:
       aeson
+    , time
     , base
     , containers
-    --, http-client
     , http-client-tls
     , servant
     , servant-client

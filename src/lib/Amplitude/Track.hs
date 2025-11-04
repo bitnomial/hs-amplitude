@@ -36,6 +36,8 @@ import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
+import Data.Time.Clock as C
+import Data.Time.Clock.POSIX (POSIXTime)
 import GHC.Generics (Generic)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Servant.API (
@@ -60,6 +62,7 @@ data AmplitudeClient = AmplitudeClient
     }
 
 newtype AmplitudeApiKey = AmplitudeApiKey {unApiKey :: Text}
+    deriving (Show, Generic, ToJSON, Eq, Ord)
 
 createClient :: AmplitudeApiKey -> IO AmplitudeClient
 createClient key = do
@@ -70,7 +73,7 @@ createClient key = do
 
 -- | Request body for Amplitude HTTP API V2
 data AmplitudeEventSubmitRequest = AmplitudeEventSubmitRequest
-    { apiKey :: Text
+    { apiKey :: AmplitudeApiKey
     , events :: [AmplitudeEvent]
     }
     deriving (Show, Generic)
@@ -100,7 +103,7 @@ data AmplitudeEvent = AmplitudeEvent
     { eventType :: Text
     , userId :: Maybe Text
     , deviceId :: Maybe Text
-    , time :: Maybe Integer -- milliseconds since epoch
+    , time :: Maybe POSIXTime
     , eventProperties :: Map Text Value
     , userProperties :: Map Text Value
     , sessionId :: Maybe Integer
@@ -116,7 +119,7 @@ instance ToJSON AmplitudeEvent where
                 [ "event_type" .= eventType evt
                 , "user_id" .= userId evt
                 , "device_id" .= deviceId evt
-                , "time" .= time evt
+                , "time" .= fmap posixTimeToMillis evt.time
                 , "event_properties" .= eventProperties evt
                 , "user_properties" .= userProperties evt
                 , "session_id" .= sessionId evt
@@ -125,6 +128,9 @@ instance ToJSON AmplitudeEvent where
       where
         notNull Aeson.Null = False
         notNull _ = True
+
+posixTimeToMillis :: POSIXTime -> Integer
+posixTimeToMillis t = round (C.nominalDiffTimeToSeconds t / 1000000000)
 
 -- | Response from Amplitude HTTP API V2
 data AmplitudeResponse = AmplitudeResponse
@@ -167,4 +173,4 @@ trackEvent ampClient event = do
             Left err -> pure . Left $ AmplitudeError err
             Right resp -> pure $ Right resp
   where
-    req = AmplitudeEventSubmitRequest ampClient.apiKey.unApiKey [event]
+    req = AmplitudeEventSubmitRequest ampClient.apiKey [event]
