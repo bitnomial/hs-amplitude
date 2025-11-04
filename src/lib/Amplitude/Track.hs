@@ -25,12 +25,14 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (
     FromJSON,
     ToJSON,
+    Value,
     object,
     withObject,
     (.:),
     (.=),
  )
 import Data.Aeson qualified as Aeson
+import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
@@ -58,7 +60,7 @@ import Servant.Client (
 
 data AmplitudeClient = AmplitudeClient
     { apiKey :: AmplitudeApiKey
-    , clientEnv :: ClientEnv
+    , servantEnv :: ClientEnv
     }
 
 newtype AmplitudeApiKey = AmplitudeApiKey {unApiKey :: Text}
@@ -103,8 +105,8 @@ data AmplitudeEvent = AmplitudeEvent
     , userId :: Maybe Text
     , deviceId :: Maybe Text
     , time :: Maybe Integer -- milliseconds since epoch
-    , eventProperties :: Maybe Aeson.Value
-    , userProperties :: Maybe Aeson.Value
+    , eventProperties :: Map Text Value
+    , userProperties :: Map Text Value
     , sessionId :: Maybe Integer
     , insertId :: Maybe Text
     }
@@ -146,15 +148,15 @@ instance FromJSON AmplitudeResponse where
             <*> v .: "server_upload_time"
 
 -- | Create an event with a user ID
-mkEventWithUserId :: Text -> Text -> AmplitudeEvent
-mkEventWithUserId eventName uid =
+mkEventWithUserId :: Text -> Text -> Map Text Value -> Map Text Value -> AmplitudeEvent
+mkEventWithUserId eventName uid meventProps muserProps =
     AmplitudeEvent
         { eventType = eventName
         , userId = Just uid
         , deviceId = Nothing
         , time = Nothing
-        , eventProperties = Nothing
-        , userProperties = Nothing
+        , eventProperties = meventProps
+        , userProperties = muserProps
         , sessionId = Nothing
         , insertId = Nothing
         }
@@ -166,6 +168,6 @@ trackEvent :: AmplitudeClient -> AmplitudeEvent -> IO (Either AmplitudeError Amp
 trackEvent ampClient event = do
     let req = AmplitudeEventSubmitRequest ampClient.apiKey.unApiKey [event]
     liftIO $
-        runClientM (eventClient req) ampClient.clientEnv >>= \case
+        runClientM (eventClient req) ampClient.servantEnv >>= \case
             Left err -> pure . Left $ AmplitudeError err
             Right resp -> pure $ Right resp

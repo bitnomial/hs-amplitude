@@ -22,7 +22,7 @@ library
   build-depends:
       aeson
     , base
-    -- , containers
+    , containers
     --, http-client
     , http-client-tls
     , servant
@@ -39,4 +39,5 @@ executable amplitude-example
       amplitude
     , base
     , text
+    , containers
   default-language: GHC2021

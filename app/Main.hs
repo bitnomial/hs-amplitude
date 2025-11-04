@@ -3,6 +3,7 @@
 module Main (main) where
 
 import Amplitude.Track
+import Data.Map.Strict qualified as SM
 import Data.Text qualified as T
 import System.Environment (lookupEnv)
 import System.Exit (die)
@@ -19,7 +20,7 @@ main = do
     client <- createClient apiKey
 
     -- Create a sample event
-    let event = mkEventWithUserId "test_event" "test_user_123"
+    let event = mkEventWithUserId "test_event" "test_user_123" eventProp userProp
 
     -- Track the event
     putStrLn "Sending event to Amplitude..."
@@ -33,3 +34,6 @@ main = do
         Right response -> do
             putStrLn "Success! Response:"
             print response
+  where
+    eventProp = SM.fromList [("some_event_prop", "some_event_prop_value")]
+    userProp = SM.fromList [("some_user_prop", "some_user_prop_value")]
