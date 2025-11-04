@@ -149,14 +149,14 @@ instance FromJSON AmplitudeResponse where
 
 -- | Create an event with a user ID
 mkEventWithUserId :: Text -> Text -> Map Text Value -> Map Text Value -> AmplitudeEvent
-mkEventWithUserId eventName uid meventProps muserProps =
+mkEventWithUserId eventName uid eventProps userProps =
     AmplitudeEvent
         { eventType = eventName
         , userId = Just uid
         , deviceId = Nothing
         , time = Nothing
-        , eventProperties = meventProps
-        , userProperties = muserProps
+        , eventProperties = eventProps
+        , userProperties = userProps
         , sessionId = Nothing
         , insertId = Nothing
         }
