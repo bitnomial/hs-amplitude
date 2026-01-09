@@ -2,23 +2,33 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Amplitude.Track (
     -- * Types
     AmplitudeClient (..),
-    AmplitudeEventSubmitRequest (..),
-    AmplitudeEvent (..),
-    AmplitudeResponse (..),
     AmplitudeApiKey (..),
-    Http2API,
 
     -- * Smart constructors
     mkEventWithUserId,
     createClient,
-    http2Client,
     trackEvent,
+
+    -- * HTTP API
+    Http2API,
+    AmplitudeEventSubmitRequest (..),
+    AmplitudeEvent (..),
+    AmplitudeResponse (..),
+    http2Client,
+
+    -- * Identify API
+    IdentifyAPI,
+    AmplitudeIdentifyRequest (..),
+    Identification (..),
+    emailIdentification,
+    identifyClient,
 ) where
 
 import Data.Aeson (
@@ -26,22 +36,29 @@ import Data.Aeson (
     ToJSON,
     Value,
     object,
+    pairs,
     withObject,
     (.:),
     (.=),
  )
 import Data.Aeson qualified as Aeson
 import Data.Bifunctor qualified as B
+import Data.ByteString.Lazy qualified as BSL
 import Data.Functor ((<&>))
 import Data.Map (Map)
+import Data.Map.Strict qualified as Map
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
-import Data.Time.Clock as C
+import Data.Text.Encoding (decodeUtf8Lenient)
+import Data.Time.Clock qualified as C
 import Data.Time.Clock.POSIX (POSIXTime)
 import GHC.Generics (Generic)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Servant.API (
+    FormUrlEncoded,
     JSON,
+    NoContent,
+    PlainText,
     Post,
     ReqBody,
     (:>),
@@ -55,6 +72,7 @@ import Servant.Client (
     parseBaseUrl,
     runClientM,
  )
+import Web.FormUrlEncoded (ToForm (toForm))
 
 data AmplitudeClient = AmplitudeClient
     { apiKey :: AmplitudeApiKey
@@ -115,11 +133,11 @@ instance ToJSON AmplitudeEvent where
             filter
                 (notNull . snd)
                 [ "event_type" .= eventType evt
-                , "user_id" .= userId evt
+                , "user_id" .= evt.userId
                 , "device_id" .= deviceId evt
                 , "time" .= fmap posixTimeToMillis evt.time
                 , "event_properties" .= eventProperties evt
-                , "user_properties" .= userProperties evt
+                , "user_properties" .= evt.userProperties
                 , "session_id" .= sessionId evt
                 -- an additional field (`insert_id`) is possible here,
                 -- but we chose not to implement it. It is used for event deduplication,
@@ -170,3 +188,52 @@ trackEvent ampClient event = do
     runClientM (http2Client req) ampClient.servantEnv <&> B.first AmplitudeError
   where
     req = AmplitudeEventSubmitRequest ampClient.apiKey [event]
+
+-- * Identify API
+
+identifyClient :: AmplitudeIdentifyRequest -> ClientM NoContent
+identifyClient = client (Proxy @IdentifyAPI)
+
+type IdentifyAPI =
+    "identify"
+        :> ReqBody '[FormUrlEncoded] AmplitudeIdentifyRequest
+        :> Post '[PlainText] NoContent
+
+{- | Identify a user via their ID, with user properties.
+
+To simply identify a user with their e-mail, see 'emailIdentification'
+-}
+data Identification = Identification
+    { userId :: !Text
+    , userProperties :: !(Map Text Value)
+    }
+    deriving (Eq, Show)
+
+emailIdentification :: Text -> Text -> Identification
+emailIdentification uid email =
+    Identification{userId = uid, userProperties = Map.singleton "email" (Aeson.toJSON email)}
+
+instance ToJSON Identification where
+    toJSON (Identification uid userProps) =
+        object ["user_id" .= uid, "user_properties" .= userProps]
+
+    toEncoding (Identification uid userProps) =
+        pairs ("user_id" .= uid <> "user_properties" .= userProps)
+
+data AmplitudeIdentifyRequest = AmplitudeIdentifyRequest
+    { apiKey :: AmplitudeApiKey
+    , identification :: Identification
+    }
+    deriving (Eq, Show)
+
+instance ToForm AmplitudeIdentifyRequest where
+    toForm (AmplitudeIdentifyRequest apiKey identification) =
+        [ ("api_key", unApiKey apiKey)
+        , -- Your eyes do not deceive you. This API requires
+          -- a url-encoded payload, with one field as a JSON blob
+
+            ( "identification"
+            , decodeUtf8Lenient . BSL.toStrict $
+                Aeson.encode identification
+            )
+        ]

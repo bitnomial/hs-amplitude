@@ -23,7 +23,9 @@ library
       aeson
     , time
     , base
+    , bytestring
     , containers
+    , http-api-data
     , http-client-tls
     , servant
     , servant-client
