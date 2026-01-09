@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Main (main) where
 
